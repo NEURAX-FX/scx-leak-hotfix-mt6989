@@ -24,6 +24,7 @@ env:
   KERNEL_BRANCH: oneplus/mt6989_v_15.0.2_ace5_race
   KERNEL_REF: ${{ github.event.inputs.kernel_ref || 'b1ea2c8ce2ef0f73927a593aa450f88143e3584a' }}
   CLANG_VERSION: clang-r487747c
+  KERNEL_BASE_VERSION: 6.1.115
   TARGET_RELEASE: 6.1.115-android14-oki-xiaoxiaow
 
 jobs:
@@ -115,8 +116,14 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
           cp "$GITHUB_WORKSPACE/module/ci/target.config" .config
           cp "$GITHUB_WORKSPACE/module/ci/Module.symvers" Module.symvers
-          # LOCALVERSION= keeps setlocalversion from appending a git suffix,
-          # which would break vermagic.
+          # The target config has CONFIG_LOCALVERSION="" with
+          # CONFIG_LOCALVERSION_AUTO=y: the vendor passed the suffix on the
+          # make command line. Left alone, setlocalversion substitutes a git
+          # description (6.1.115-g<sha>) and vermagic will not match, so set
+          # the suffix explicitly and disable the automatic one.
+          ./scripts/config --file .config \
+            --set-str LOCALVERSION "${TARGET_RELEASE#$KERNEL_BASE_VERSION}" \
+            --disable LOCALVERSION_AUTO
           make ARCH=arm64 LLVM=1 LOCALVERSION= olddefconfig
           make ARCH=arm64 LLVM=1 LOCALVERSION= -j"$(nproc)" modules_prepare
           release=$(cat include/config/kernel.release)

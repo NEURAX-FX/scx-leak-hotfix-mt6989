@@ -43,4 +43,21 @@ for script in "$ROOT"/tools/*.py; do
 		fail "python syntax: $script"
 done
 
+# The target config carries CONFIG_LOCALVERSION="" with LOCALVERSION_AUTO=y,
+# so any build that does not override both ends up with a git-derived release
+# and a vermagic the target kernel rejects. CI hit exactly this, so assert the
+# workflow still sets them.
+WORKFLOW="$ROOT/.github/workflows/build.yml"
+if [ -f "$WORKFLOW" ]; then
+	grep -Fq -- '--set-str LOCALVERSION' "$WORKFLOW" ||
+		fail "workflow must set CONFIG_LOCALVERSION explicitly"
+	grep -Fq -- '--disable LOCALVERSION_AUTO' "$WORKFLOW" ||
+		fail "workflow must disable CONFIG_LOCALVERSION_AUTO"
+fi
+
+if grep -Fq 'CONFIG_LOCALVERSION_AUTO=y' "$ROOT/ci/target.config" 2>/dev/null &&
+   ! grep -Fq 'CONFIG_LOCALVERSION_AUTO' "$ROOT/profiles/mt6989_ace5_race.md"; then
+	fail "profile must document the LOCALVERSION_AUTO trap"
+fi
+
 printf 'PASS: source safety contract\n'

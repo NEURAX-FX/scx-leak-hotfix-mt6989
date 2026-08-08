@@ -71,13 +71,26 @@ Prepare the kernel tree first:
 cd "$KDIR"
 cp /path/to/scx-memlf/ci/target.config .config
 cp /path/to/scx-memlf/ci/Module.symvers Module.symvers
+
+# The extracted config has CONFIG_LOCALVERSION="" with LOCALVERSION_AUTO=y;
+# the vendor passed the suffix on the command line. Without both lines below,
+# setlocalversion substitutes a git description and insmod fails on vermagic.
+./scripts/config --file .config \
+  --set-str LOCALVERSION "-android14-oki-xiaoxiaow" \
+  --disable LOCALVERSION_AUTO
+
 make ARCH=arm64 LLVM=1 LOCALVERSION= olddefconfig
 make ARCH=arm64 LLVM=1 LOCALVERSION= -j"$(nproc)" modules_prepare
 ```
 
-`LOCALVERSION=` is required. Without it `scripts/setlocalversion` appends a
-git suffix and the resulting vermagic will not match. Note that a full kernel
-build is *not* needed: `modules_prepare` is enough.
+Confirm the release before building the module:
+
+```sh
+cat include/config/kernel.release
+# 6.1.115-android14-oki-xiaoxiaow
+```
+
+A full kernel build is *not* needed; `modules_prepare` is enough.
 
 Verify the artifact before going near a device:
 

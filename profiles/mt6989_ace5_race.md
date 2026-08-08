@@ -35,9 +35,29 @@ device, without any vendor build artifacts. Reproduce with
 
 Extracted from the target image with `scripts/extract-ikconfig`.
 
+### The LOCALVERSION trap
+
 `CONFIG_LOCALVERSION` is **empty** in this config even though the release is
-`6.1.115-android14-oki-xiaoxiaow`. The vendor passed `LOCALVERSION` on the make
-command line, so you must do the same or vermagic will not match.
+`6.1.115-android14-oki-xiaoxiaow`, and `CONFIG_LOCALVERSION_AUTO=y`. The vendor
+passed the suffix on the make command line.
+
+Build with the config as extracted and `scripts/setlocalversion` fills the gap
+from git instead, producing `6.1.115-g<sha>`. The module then builds cleanly and
+`insmod` fails with `-ENOEXEC` on a vermagic mismatch. Set both explicitly:
+
+```sh
+./scripts/config --file .config \
+  --set-str LOCALVERSION "-android14-oki-xiaoxiaow" \
+  --disable LOCALVERSION_AUTO
+```
+
+Passing `LOCALVERSION=` on the make command line is *not* enough on its own: it
+clears the make variable but `LOCALVERSION_AUTO` still appends the git
+description.
+
+Disabling `LOCALVERSION_AUTO` also drops `CONFIG_MODULE_SCMVERSION`, which
+depends on it. That is harmless here — `scmversion` is an unconditional member
+of `struct module` in this tree, so the size is unaffected.
 
 | Option | Value | Why it matters |
 |---|---|---|
