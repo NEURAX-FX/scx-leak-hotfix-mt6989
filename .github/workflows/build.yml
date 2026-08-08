@@ -32,7 +32,7 @@ jobs:
     name: static checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Source safety contract
         run: sh tests/source_contract.sh
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: static
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: module
 
@@ -188,7 +188,7 @@ jobs:
           sys.exit(1 if bad else 0)
           PY
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: scx_leak_hotfix
           path: |

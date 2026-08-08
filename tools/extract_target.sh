@@ -23,6 +23,18 @@ OUTDIR="${3:-ci}"
 KALLSYMS="${4:-/proc/kallsyms}"
 
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+old_kptr_restrict=""
+
+restore_kptr_restrict()
+{
+	if [ -n "$old_kptr_restrict" ] &&
+	   [ -w /proc/sys/kernel/kptr_restrict ]; then
+		echo "$old_kptr_restrict" > /proc/sys/kernel/kptr_restrict
+		printf 'restored kernel.kptr_restrict=%s\n' "$old_kptr_restrict"
+	fi
+}
+
+trap restore_kptr_restrict EXIT HUP INT TERM
 
 if [ ! -x "$KDIR/scripts/extract-ikconfig" ]; then
 	printf 'error: %s/scripts/extract-ikconfig not found\n' "$KDIR" >&2
@@ -93,6 +105,7 @@ fi
 restrict=$(cat /proc/sys/kernel/kptr_restrict 2>/dev/null || echo "?")
 if [ "$KALLSYMS" = /proc/kallsyms ] && [ "$restrict" != 0 ]; then
 	printf 'kptr_restrict is %s; addresses read as zero. Lowering it.\n' "$restrict"
+	old_kptr_restrict=$restrict
 	echo 0 > /proc/sys/kernel/kptr_restrict
 fi
 python3 "$HERE/gen_symvers.py" "$IMAGE" "$KALLSYMS" "$OUTDIR/Module.symvers"
