@@ -193,4 +193,5 @@ jobs:
           name: scx_leak_hotfix
           path: |
             module/scx_leak_hotfix.ko
-            module/Module.symvers
+            module/ci/Module.symvers
+            module/ci/target.config
