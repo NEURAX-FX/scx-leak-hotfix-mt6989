@@ -17,16 +17,18 @@ require_literal()
 
 test -f "$SRC" || fail "missing scx_leak_hotfix.c"
 
-require_literal '.symbol_name = "sched_ext_free"'
-require_literal '.symbol_name = "scx_cancel_fork"'
+require_literal '#include <trace/hooks/sched.h>'
+require_literal 'register_trace_android_vh_free_task(hotfix_free_task, NULL)'
+require_literal 'unregister_trace_android_vh_free_task(hotfix_free_task, NULL)'
+require_literal 'tracepoint_synchronize_unregister()'
 require_literal 'READ_ONCE(scx->task) != task'
 require_literal 'cmpxchg(&task->scx, scx, NULL)'
 require_literal 'kfree(scx)'
 require_literal 'static_assert(sizeof(struct module) == HOTFIX_MODULE_SIZE)'
-require_literal 'unregister_kretprobe(&cancel_probe)'
-require_literal 'unregister_kretprobe(&free_probe)'
-require_literal 'normal_nmissed'
-require_literal 'cancel_nmissed'
+
+if grep -Eq 'kretprobe|register_kprobe|<linux/kprobes\.h>' "$SRC"; then
+	fail "kprobe/kretprobe usage is forbidden in the production module"
+fi
 
 if grep -Eq '\.addr[[:space:]]*=' "$SRC"; then
 	fail "hard-coded probe addresses are forbidden"

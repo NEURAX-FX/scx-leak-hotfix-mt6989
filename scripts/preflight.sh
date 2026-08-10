@@ -38,8 +38,9 @@ if [ "$spoofed" != "$release" ]; then
 	info "uname -r reports '$spoofed' (susfs spoofing; ignored)"
 fi
 
-# 3. Target symbols must be present and not inlined away.
-for sym in sched_ext_free scx_cancel_fork; do
+# 3. The Android vendor hook and its registration API must be present.
+for sym in __tracepoint_android_vh_free_task tracepoint_probe_register \
+	tracepoint_probe_unregister; do
 	if grep -qE " $sym\$" /proc/kallsyms 2>/dev/null; then
 		pass "symbol $sym resolvable"
 	else
@@ -50,8 +51,8 @@ done
 # 4. Kernel configuration, when readable.
 if [ -r /proc/config.gz ]; then
 	cfg=$(zcat /proc/config.gz 2>/dev/null)
-	for opt in CONFIG_SLIM_SCHED CONFIG_SCHED_CLASS_EXT CONFIG_KPROBES \
-		CONFIG_KRETPROBES CONFIG_MODVERSIONS; do
+	for opt in CONFIG_SLIM_SCHED CONFIG_SCHED_CLASS_EXT CONFIG_TRACEPOINTS \
+		CONFIG_ANDROID_VENDOR_HOOKS CONFIG_MODVERSIONS; do
 		if printf '%s\n' "$cfg" | grep -q "^${opt}=y"; then
 			pass "$opt=y"
 		else
